@@ -19,7 +19,7 @@ guesses = 9
 while guesses > 0 && mystery_word.any? { |word| word == '_' }
   puts "Remaining guesses #{guesses}"
   print 'Guess a letter: '
-  guess = gets.chomp
+  guess = gets.chomp.downcase
   if guess.length != 1 || incorrect_letters.include?(guess)
     next
   end
@@ -39,6 +39,7 @@ while guesses > 0 && mystery_word.any? { |word| word == '_' }
 end
 
 if mystery_word.any? { |word| word == '_' }
+  puts 'You lose!'
   puts "The word was \"#{random_word}\""
 else
   puts 'You win!'
