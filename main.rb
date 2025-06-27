@@ -1,46 +1,84 @@
-fname = 'google-10000-english-no-swears.txt'
-dictionary = []
+require 'yaml'
 
-File.readlines(fname).each do |line|
-  dictionary.push(line.chomp)
-end
+class Game
+  attr_accessor :secret_word, :misses, :hits, :guesses
 
-valid_words = dictionary.select do |word|
-  word.length >= 5 && word.length <= 12
-end
+  def initialize
+    fname = 'google-10000-english-no-swears.txt'
+    dictionary = []
 
-random_word = valid_words.sample()
-
-incorrect_letters = []
-mystery_word = Array.new(random_word.length, '_')
-guesses = 9
-
-
-while guesses > 0 && mystery_word.any? { |word| word == '_' }
-  puts "Remaining guesses #{guesses}"
-  print 'Guess a letter: '
-  guess = gets.chomp.downcase
-  if guess.length != 1 || incorrect_letters.include?(guess)
-    next
-  end
-  if random_word.include?(guess)
-    indices = (0..random_word.length).find_all { |i| random_word[i, 1] == guess}
-    indices.each do |index|
-      mystery_word[index] = guess
+    File.readlines(fname).each do |line|
+      dictionary.push(line.chomp)
     end
-  else
-    incorrect_letters.push(guess)
-    guesses -= 1
+
+    @valid_words = dictionary.select do |word|
+      word.length >= 5 && word.length <= 12
+    end
+
+    @secret_word = @valid_words.sample()
+    @misses = []
+    @hits = Array.new(secret_word.length, '_')
+    @guesses = 9
   end
-  puts
-  puts mystery_word.join(' ')
-  puts
-  puts "Incorrect letters chosen: #{incorrect_letters.join}\n"
+
+  def to_yaml
+    YAML.dump ({
+      :secret_word => secret_word,
+      :incorrect_letters => incorrect_letters,
+      :correct_letters => correct_letters,
+      :guesses => guesses
+    })
+  end
+
+  def from_yaml(string)
+    data = YAML.load string
+    self.new(data[:secret_word], data[:misses], data[:hits], data[:guesses])
+  end
+
+  def save(string)
+    File.open('save.txt', 'w') do |f|
+      f.puts string
+    end
+  end
+
+  def load
+    string = ""
+    File.readLines('save.txt').each do |line|
+      string << line
+    end
+    string
+  end
+
+  def play
+    while @guesses > 0 && @hits.any? { |word| word == '_' }
+      puts "Remaining guesses: #{@guesses}"
+      print 'Guess a letter: '
+      guess = gets.chomp.downcase
+      if guess.length != 1 || @misses.include?(guess)
+        next
+      end
+      if secret_word.include?(guess)
+        indices = (0..secret_word.length).find_all { |i| secret_word[i, 1] == guess}
+        indices.each do |index|
+          @hits[index] = guess
+        end
+      else
+        @misses.push(guess)
+        @guesses -= 1
+      end
+      puts
+      puts @hits.join(' ')
+      puts
+      puts "Incorrect letters chosen: #{@misses.join}\n"
+    end
+    
+    if @hits.any? { |word| word == '_' }
+      puts 'You lose!'
+      puts "The word was \"#{secret_word}\""
+    else
+      puts 'You win!'
+    end    
+  end
 end
 
-if mystery_word.any? { |word| word == '_' }
-  puts 'You lose!'
-  puts "The word was \"#{random_word}\""
-else
-  puts 'You win!'
-end
+Game.new.play
