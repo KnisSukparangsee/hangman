@@ -21,7 +21,12 @@ class Game
 
   def from_yaml(string)
     data = YAML.load string
-    self.new(data[:secret_word], data[:misses], data[:hits], data[:guesses])
+    save = Game.new(data[:secret_word], data[:misses], data[:hits], data[:guesses])
+    puts
+    puts save.hits.join(' ')
+    puts
+    puts "Incorrect letters chosen: #{save.misses.join}\n"
+    save
   end
 
   def save(string)
@@ -49,11 +54,13 @@ class Game
       elsif guess == '+'
         string = self.to_yaml
         save(string)
+        puts 'Game saved'
         next
       elsif guess == '-'
         string = load
-        p string
-        # from_yaml(string).play
+        puts
+        puts 'Previous save loaded'
+        from_yaml(string).play
         return
       end
       if secret_word.include?(guess)
