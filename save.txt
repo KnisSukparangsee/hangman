@@ -1,0 +1,14 @@
+---
+:secret_word: cattle
+:misses:
+- i
+- o
+- u
+:hits:
+- _
+- a
+- _
+- _
+- _
+- e
+:guesses: 6

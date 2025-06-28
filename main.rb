@@ -3,30 +3,19 @@ require 'yaml'
 class Game
   attr_accessor :secret_word, :misses, :hits, :guesses
 
-  def initialize
-    fname = 'google-10000-english-no-swears.txt'
-    dictionary = []
-
-    File.readlines(fname).each do |line|
-      dictionary.push(line.chomp)
-    end
-
-    @valid_words = dictionary.select do |word|
-      word.length >= 5 && word.length <= 12
-    end
-
-    @secret_word = @valid_words.sample()
-    @misses = []
-    @hits = Array.new(secret_word.length, '_')
-    @guesses = 9
+  def initialize(secret_word, misses, hits, guesses)
+    @secret_word = secret_word
+    @misses = misses
+    @hits = hits
+    @guesses = guesses
   end
 
   def to_yaml
     YAML.dump ({
-      :secret_word => secret_word,
-      :incorrect_letters => incorrect_letters,
-      :correct_letters => correct_letters,
-      :guesses => guesses
+      :secret_word => @secret_word,
+      :misses => @misses,
+      :hits => @hits,
+      :guesses => @guesses
     })
   end
 
@@ -43,24 +32,37 @@ class Game
 
   def load
     string = ""
-    File.readLines('save.txt').each do |line|
+    File.readlines('save.txt').each do |line|
       string << line
     end
     string
   end
 
   def play
-    while @guesses > 0 && @hits.any? { |word| word == '_' }
+    while @guesses > 0 && @hits.any? { |letter| letter == '_' }
       puts "Remaining guesses: #{@guesses}"
+      puts 'Press + to save - to load game'
       print 'Guess a letter: '
       guess = gets.chomp.downcase
       if guess.length != 1 || @misses.include?(guess)
         next
+      elsif guess == '+'
+        string = self.to_yaml
+        save(string)
+        next
+      elsif guess == '-'
+        string = load
+        p string
+        # from_yaml(string).play
+        return
       end
       if secret_word.include?(guess)
         indices = (0..secret_word.length).find_all { |i| secret_word[i, 1] == guess}
         indices.each do |index|
           @hits[index] = guess
+        end
+        if @hits.all? { |letter| letter != '_' }
+          break
         end
       else
         @misses.push(guess)
@@ -71,8 +73,12 @@ class Game
       puts
       puts "Incorrect letters chosen: #{@misses.join}\n"
     end
+
+    puts
+    puts @hits.join(' ')
+    puts
     
-    if @hits.any? { |word| word == '_' }
+    if @hits.any? { |letter| letter == '_' }
       puts 'You lose!'
       puts "The word was \"#{secret_word}\""
     else
@@ -81,4 +87,19 @@ class Game
   end
 end
 
-Game.new.play
+fname = 'google-10000-english-no-swears.txt'
+dictionary = []
+
+File.readlines(fname).each do |line|
+  dictionary.push(line.chomp)
+end
+
+valid_words = dictionary.select do |word|
+  word.length >= 5 && word.length <= 12
+end
+
+secret_word = valid_words.sample()
+misses = []
+hits = Array.new(secret_word.length, '_')
+guesses = 9
+Game.new(secret_word, misses, hits, guesses).play
